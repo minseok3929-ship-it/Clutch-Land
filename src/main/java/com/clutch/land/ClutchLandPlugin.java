@@ -1,0 +1,64 @@
+package com.clutch.land;
+
+import com.clutch.land.command.LandRootCommand;
+import com.clutch.land.infrastructure.AsyncDatabaseWriter;
+import com.clutch.land.infrastructure.CacheLoader;
+import com.clutch.land.infrastructure.Database;
+import com.clutch.land.infrastructure.MigrationRunner;
+import com.clutch.land.listener.LandProtectionListener;
+import com.clutch.land.service.LandCacheService;
+import java.util.Objects;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.plugin.java.JavaPlugin;
+
+public final class ClutchLandPlugin extends JavaPlugin {
+    private Database database;
+    private AsyncDatabaseWriter asyncWriter;
+    private LandCacheService landCacheService;
+
+    @Override
+    public void onEnable() {
+        saveDefaultConfig();
+
+        this.database = new Database(getDataFolder().toPath().resolve("clutch-land.db"));
+        this.database.connect();
+
+        MigrationRunner migrationRunner = new MigrationRunner(database);
+        migrationRunner.migrate();
+
+        this.asyncWriter = new AsyncDatabaseWriter(this, database);
+        this.asyncWriter.start();
+
+        CacheLoader cacheLoader = new CacheLoader();
+        this.landCacheService = new LandCacheService(cacheLoader.loadAllLands());
+
+        registerCommands();
+        getServer().getPluginManager().registerEvents(new LandProtectionListener(landCacheService), this);
+
+        getLogger().info("ClutchLand enabled.");
+    }
+
+    @Override
+    public void onDisable() {
+        if (asyncWriter != null) {
+            asyncWriter.shutdownAndFlush();
+        }
+
+        if (database != null) {
+            database.close();
+        }
+
+        getLogger().info("ClutchLand disabled.");
+    }
+
+    private void registerCommands() {
+        LandRootCommand rootCommand = new LandRootCommand();
+        PluginCommand landCommand = Objects.requireNonNull(getCommand("토지"), "토지 command not found");
+        PluginCommand plotCommand = Objects.requireNonNull(getCommand("땅"), "땅 command not found");
+
+        landCommand.setExecutor(rootCommand);
+        landCommand.setTabCompleter(rootCommand);
+        plotCommand.setExecutor(rootCommand);
+        plotCommand.setTabCompleter(rootCommand);
+    }
+}
