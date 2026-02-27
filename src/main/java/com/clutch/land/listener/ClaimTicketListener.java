@@ -3,6 +3,7 @@ package com.clutch.land.listener;
 import com.clutch.land.infrastructure.AsyncDatabaseWriter;
 import com.clutch.land.repository.LandRepository;
 import com.clutch.land.service.LandCacheService;
+import com.clutch.land.service.LandQueryService;
 import com.clutch.land.ui.MessageFacade;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -19,17 +20,20 @@ public final class ClaimTicketListener implements Listener {
     public static final int CLAIM_TICKET_CUSTOM_MODEL_DATA = 991101;
 
     private final LandCacheService cacheService;
+    private final LandQueryService landQueryService;
     private final LandRepository landRepository;
     private final AsyncDatabaseWriter writer;
     private final MessageFacade messageFacade;
 
     public ClaimTicketListener(
             LandCacheService cacheService,
+            LandQueryService landQueryService,
             LandRepository landRepository,
             AsyncDatabaseWriter writer,
             MessageFacade messageFacade
     ) {
         this.cacheService = cacheService;
+        this.landQueryService = landQueryService;
         this.landRepository = landRepository;
         this.writer = writer;
         this.messageFacade = messageFacade;
@@ -48,8 +52,7 @@ public final class ClaimTicketListener implements Listener {
         }
 
         Player player = event.getPlayer();
-        var loc = player.getLocation();
-        var landOpt = cacheService.findLandAt(loc.getWorld().getUID().toString(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+        var landOpt = landQueryService.findAt(player);
         if (landOpt.isEmpty()) {
             messageFacade.error(player, "이 곳은 구매할 수 없는 땅 입니다.");
             event.setCancelled(true);

@@ -117,6 +117,12 @@ public final class LandCacheService {
         membersByLand.remove(landId);
     }
 
+
+    public boolean isMember(int landId, UUID playerUuid) {
+        Set<UUID> members = membersByLand.get(landId);
+        return members != null && members.contains(playerUuid);
+    }
+
     public boolean isOwner(int landId, UUID playerUuid) {
         Land land = landsById.get(landId);
         return land != null && land.isOwned() && playerUuid.toString().equals(land.ownerUuid());

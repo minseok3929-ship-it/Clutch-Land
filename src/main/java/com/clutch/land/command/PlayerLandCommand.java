@@ -4,6 +4,7 @@ import com.clutch.land.infrastructure.AsyncDatabaseWriter;
 import com.clutch.land.repository.LandMemberRepository;
 import com.clutch.land.repository.LandRepository;
 import com.clutch.land.service.LandCacheService;
+import com.clutch.land.service.LandQueryService;
 import com.clutch.land.ui.MessageFacade;
 import java.util.List;
 import java.util.UUID;
@@ -18,6 +19,7 @@ import org.bukkit.entity.Player;
 
 public final class PlayerLandCommand implements CommandExecutor, TabCompleter {
     private final LandCacheService cacheService;
+    private final LandQueryService landQueryService;
     private final LandRepository landRepository;
     private final LandMemberRepository landMemberRepository;
     private final AsyncDatabaseWriter writer;
@@ -25,12 +27,14 @@ public final class PlayerLandCommand implements CommandExecutor, TabCompleter {
 
     public PlayerLandCommand(
             LandCacheService cacheService,
+            LandQueryService landQueryService,
             LandRepository landRepository,
             LandMemberRepository landMemberRepository,
             AsyncDatabaseWriter writer,
             MessageFacade messageFacade
     ) {
         this.cacheService = cacheService;
+        this.landQueryService = landQueryService;
         this.landRepository = landRepository;
         this.landMemberRepository = landMemberRepository;
         this.writer = writer;
@@ -44,8 +48,7 @@ public final class PlayerLandCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        var location = player.getLocation();
-        var landOpt = cacheService.findLandAt(location.getWorld().getUID().toString(), location.getBlockX(), location.getBlockY(), location.getBlockZ());
+        var landOpt = landQueryService.findAt(player);
         if (landOpt.isEmpty()) {
             messageFacade.error(player, "현재 위치는 등록 토지가 아닙니다.");
             return true;

@@ -9,6 +9,7 @@ import com.clutch.land.infrastructure.SqliteLandChunkRepository;
 import com.clutch.land.infrastructure.SqliteLandMemberRepository;
 import com.clutch.land.infrastructure.SqliteLandRepository;
 import com.clutch.land.listener.ClaimTicketListener;
+import com.clutch.land.listener.LandEnterTitleListener;
 import com.clutch.land.listener.LandProtectionListener;
 import com.clutch.land.listener.SelectionToolListener;
 import com.clutch.land.repository.LandChunkRepository;
@@ -16,6 +17,8 @@ import com.clutch.land.repository.LandMemberRepository;
 import com.clutch.land.repository.LandRepository;
 import com.clutch.land.service.LandCacheService;
 import com.clutch.land.service.LandCacheSnapshot;
+import com.clutch.land.service.LandPermissionService;
+import com.clutch.land.service.LandQueryService;
 import com.clutch.land.service.SelectionService;
 import com.clutch.land.ui.MessageFacade;
 import java.util.Objects;
@@ -44,18 +47,21 @@ public final class ClutchLandPlugin extends JavaPlugin {
         CacheLoader cacheLoader = new CacheLoader(landRepository, landMemberRepository, landChunkRepository);
         LandCacheSnapshot snapshot = cacheLoader.loadAll();
         LandCacheService landCacheService = new LandCacheService(snapshot);
+        LandQueryService landQueryService = new LandQueryService(landCacheService);
+        LandPermissionService landPermissionService = new LandPermissionService(landCacheService);
 
         SelectionService selectionService = new SelectionService();
         MessageFacade messageFacade = new MessageFacade();
 
         registerCommands(
                 new AdminLandCommand(selectionService, landRepository, landChunkRepository, landCacheService, messageFacade),
-                new PlayerLandCommand(landCacheService, landRepository, landMemberRepository, asyncWriter, messageFacade)
+                new PlayerLandCommand(landCacheService, landQueryService, landRepository, landMemberRepository, asyncWriter, messageFacade)
         );
 
-        getServer().getPluginManager().registerEvents(new LandProtectionListener(landCacheService, messageFacade), this);
+        getServer().getPluginManager().registerEvents(new LandProtectionListener(landQueryService, landPermissionService, messageFacade), this);
         getServer().getPluginManager().registerEvents(new SelectionToolListener(selectionService, messageFacade), this);
-        getServer().getPluginManager().registerEvents(new ClaimTicketListener(landCacheService, landRepository, asyncWriter, messageFacade), this);
+        getServer().getPluginManager().registerEvents(new ClaimTicketListener(landCacheService, landQueryService, landRepository, asyncWriter, messageFacade), this);
+        getServer().getPluginManager().registerEvents(new LandEnterTitleListener(landQueryService), this);
 
         getLogger().info("ClutchLand enabled.");
     }
