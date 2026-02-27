@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.bukkit.entity.Player;
 
 public final class LandCacheService {
     private final Map<Integer, Land> landsById;
@@ -38,6 +39,24 @@ public final class LandCacheService {
         return Optional.empty();
     }
 
+    public boolean canBuild(Player player, Land land) {
+        if (player.isOp()) {
+            return true;
+        }
+
+        if (!land.isOwned()) {
+            return false;
+        }
+
+        UUID playerId = player.getUniqueId();
+        if (playerId.toString().equals(land.ownerUuid())) {
+            return true;
+        }
+
+        Set<UUID> members = membersByLand.get(land.id());
+        return members != null && members.contains(playerId);
+    }
+
     public Set<Integer> collectCandidateLandIds(String worldId, int minX, int maxX, int minZ, int maxZ) {
         Set<Integer> result = new HashSet<>();
         int minChunkX = minX >> 4;
@@ -62,22 +81,71 @@ public final class LandCacheService {
 
     public void addLand(Land land, Set<ChunkKey> chunks) {
         landsById.put(land.id(), land);
-
-        if (land.ownerUuid() != null && !land.ownerUuid().isBlank()) {
-            try {
-                UUID owner = UUID.fromString(land.ownerUuid());
-                landsByOwner.computeIfAbsent(owner, ignored -> ConcurrentHashMap.newKeySet()).add(land.id());
-            } catch (IllegalArgumentException ignored) {
-                // ignore invalid owner UUID
-            }
-        }
-
+        indexOwner(land.id(), land.ownerUuid());
         for (ChunkKey chunk : chunks) {
             chunkIndex.computeIfAbsent(chunk, ignored -> ConcurrentHashMap.newKeySet()).add(land.id());
         }
     }
 
-    public Map<Integer, Set<UUID>> membersByLandView() {
-        return Map.copyOf(membersByLand);
+    public void updateOwner(int landId, String newOwnerUuid) {
+        Land old = landsById.get(landId);
+        if (old == null) {
+            return;
+        }
+
+        unindexOwner(landId, old.ownerUuid());
+        Land updated = new Land(
+                old.id(), old.worldId(), old.minX(), old.maxX(), old.minY(), old.maxY(), old.minZ(), old.maxZ(),
+                newOwnerUuid, old.grade(), old.flagsJson()
+        );
+        landsById.put(landId, updated);
+        indexOwner(landId, newOwnerUuid);
+    }
+
+    public void addMember(int landId, UUID memberUuid) {
+        membersByLand.computeIfAbsent(landId, ignored -> ConcurrentHashMap.newKeySet()).add(memberUuid);
+    }
+
+    public void removeMember(int landId, UUID memberUuid) {
+        Set<UUID> set = membersByLand.get(landId);
+        if (set != null) {
+            set.remove(memberUuid);
+        }
+    }
+
+    public void clearMembers(int landId) {
+        membersByLand.remove(landId);
+    }
+
+    public boolean isOwner(int landId, UUID playerUuid) {
+        Land land = landsById.get(landId);
+        return land != null && land.isOwned() && playerUuid.toString().equals(land.ownerUuid());
+    }
+
+    private void indexOwner(int landId, String ownerUuid) {
+        if (ownerUuid == null || ownerUuid.isBlank()) {
+            return;
+        }
+        try {
+            UUID owner = UUID.fromString(ownerUuid);
+            landsByOwner.computeIfAbsent(owner, ignored -> ConcurrentHashMap.newKeySet()).add(landId);
+        } catch (IllegalArgumentException ignored) {
+            // ignore invalid owner uuid
+        }
+    }
+
+    private void unindexOwner(int landId, String ownerUuid) {
+        if (ownerUuid == null || ownerUuid.isBlank()) {
+            return;
+        }
+        try {
+            UUID owner = UUID.fromString(ownerUuid);
+            Set<Integer> set = landsByOwner.get(owner);
+            if (set != null) {
+                set.remove(landId);
+            }
+        } catch (IllegalArgumentException ignored) {
+            // ignore invalid owner uuid
+        }
     }
 }
