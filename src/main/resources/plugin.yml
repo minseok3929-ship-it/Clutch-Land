@@ -1,0 +1,19 @@
+name: ClutchLand
+version: ${version}
+main: com.clutch.land.ClutchLandPlugin
+api-version: '1.21'
+authors: [Clutch]
+description: Pre-registered parcel land plugin for Paper.
+commands:
+  토지:
+    description: 토지 관리 명령어
+    usage: /토지
+    aliases: [land]
+  땅:
+    description: 땅 관리 명령어
+    usage: /땅
+    aliases: [claim]
+permissions:
+  clutchland.admin:
+    description: 관리 기능 사용 권한
+    default: op
