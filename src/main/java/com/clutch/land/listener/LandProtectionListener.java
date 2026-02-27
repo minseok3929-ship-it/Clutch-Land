@@ -16,11 +16,12 @@ public final class LandProtectionListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
-        String worldUuid = event.getBlock().getWorld().getUID().toString();
+        String worldId = event.getBlock().getWorld().getUID().toString();
         int x = event.getBlock().getX();
+        int y = event.getBlock().getY();
         int z = event.getBlock().getZ();
 
-        boolean inRegisteredLand = landCacheService.findLandAt(worldUuid, x, z).isPresent();
+        boolean inRegisteredLand = landCacheService.findLandAt(worldId, x, y, z).isPresent();
         if (!inRegisteredLand && !player.isOp()) {
             event.setCancelled(true);
             player.sendMessage("§c등록된 토지에서만 건축할 수 있습니다.");

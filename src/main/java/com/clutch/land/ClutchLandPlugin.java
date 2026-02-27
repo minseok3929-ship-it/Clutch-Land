@@ -4,8 +4,15 @@ import com.clutch.land.command.LandRootCommand;
 import com.clutch.land.infrastructure.AsyncDatabaseWriter;
 import com.clutch.land.infrastructure.CacheLoader;
 import com.clutch.land.infrastructure.Database;
+import com.clutch.land.infrastructure.SqliteLandChunkRepository;
+import com.clutch.land.infrastructure.SqliteLandMemberRepository;
+import com.clutch.land.infrastructure.SqliteLandRepository;
 import com.clutch.land.listener.LandProtectionListener;
+import com.clutch.land.repository.LandChunkRepository;
+import com.clutch.land.repository.LandMemberRepository;
+import com.clutch.land.repository.LandRepository;
 import com.clutch.land.service.LandCacheService;
+import com.clutch.land.service.LandCacheSnapshot;
 import java.util.Objects;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -26,8 +33,13 @@ public final class ClutchLandPlugin extends JavaPlugin {
         this.asyncWriter = new AsyncDatabaseWriter(this, database);
         this.asyncWriter.start();
 
-        CacheLoader cacheLoader = new CacheLoader();
-        this.landCacheService = new LandCacheService(cacheLoader.loadAllLands());
+        LandRepository landRepository = new SqliteLandRepository(database);
+        LandMemberRepository landMemberRepository = new SqliteLandMemberRepository(database);
+        LandChunkRepository landChunkRepository = new SqliteLandChunkRepository(database);
+
+        CacheLoader cacheLoader = new CacheLoader(landRepository, landMemberRepository, landChunkRepository);
+        LandCacheSnapshot snapshot = cacheLoader.loadAll();
+        this.landCacheService = new LandCacheService(snapshot);
 
         registerCommands();
         getServer().getPluginManager().registerEvents(new LandProtectionListener(landCacheService), this);
