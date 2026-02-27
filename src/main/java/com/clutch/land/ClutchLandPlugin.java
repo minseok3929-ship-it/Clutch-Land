@@ -8,11 +8,14 @@ import com.clutch.land.infrastructure.SqliteLandChunkRepository;
 import com.clutch.land.infrastructure.SqliteLandMemberRepository;
 import com.clutch.land.infrastructure.SqliteLandRepository;
 import com.clutch.land.listener.LandProtectionListener;
+import com.clutch.land.listener.SelectionToolListener;
 import com.clutch.land.repository.LandChunkRepository;
 import com.clutch.land.repository.LandMemberRepository;
 import com.clutch.land.repository.LandRepository;
 import com.clutch.land.service.LandCacheService;
 import com.clutch.land.service.LandCacheSnapshot;
+import com.clutch.land.service.SelectionService;
+import com.clutch.land.ui.MessageFacade;
 import java.util.Objects;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -20,7 +23,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class ClutchLandPlugin extends JavaPlugin {
     private Database database;
     private AsyncDatabaseWriter asyncWriter;
-    private LandCacheService landCacheService;
 
     @Override
     public void onEnable() {
@@ -39,10 +41,21 @@ public final class ClutchLandPlugin extends JavaPlugin {
 
         CacheLoader cacheLoader = new CacheLoader(landRepository, landMemberRepository, landChunkRepository);
         LandCacheSnapshot snapshot = cacheLoader.loadAll();
-        this.landCacheService = new LandCacheService(snapshot);
+        LandCacheService landCacheService = new LandCacheService(snapshot);
 
-        registerCommands();
+        SelectionService selectionService = new SelectionService();
+        MessageFacade messageFacade = new MessageFacade();
+
+        registerCommands(new LandRootCommand(
+                selectionService,
+                landRepository,
+                landChunkRepository,
+                landCacheService,
+                messageFacade
+        ));
+
         getServer().getPluginManager().registerEvents(new LandProtectionListener(landCacheService), this);
+        getServer().getPluginManager().registerEvents(new SelectionToolListener(selectionService, messageFacade), this);
 
         getLogger().info("ClutchLand enabled.");
     }
@@ -60,8 +73,7 @@ public final class ClutchLandPlugin extends JavaPlugin {
         getLogger().info("ClutchLand disabled.");
     }
 
-    private void registerCommands() {
-        LandRootCommand rootCommand = new LandRootCommand();
+    private void registerCommands(LandRootCommand rootCommand) {
         PluginCommand landCommand = Objects.requireNonNull(getCommand("토지"), "토지 command not found");
         PluginCommand plotCommand = Objects.requireNonNull(getCommand("땅"), "땅 command not found");
 
