@@ -4,7 +4,6 @@ import com.clutch.land.command.LandRootCommand;
 import com.clutch.land.infrastructure.AsyncDatabaseWriter;
 import com.clutch.land.infrastructure.CacheLoader;
 import com.clutch.land.infrastructure.Database;
-import com.clutch.land.infrastructure.MigrationRunner;
 import com.clutch.land.listener.LandProtectionListener;
 import com.clutch.land.service.LandCacheService;
 import java.util.Objects;
@@ -22,9 +21,7 @@ public final class ClutchLandPlugin extends JavaPlugin {
 
         this.database = new Database(getDataFolder().toPath().resolve("clutch-land.db"));
         this.database.connect();
-
-        MigrationRunner migrationRunner = new MigrationRunner(database);
-        migrationRunner.migrate();
+        this.database.migrate();
 
         this.asyncWriter = new AsyncDatabaseWriter(this, database);
         this.asyncWriter.start();
