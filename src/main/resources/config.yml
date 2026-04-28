@@ -1,0 +1,15 @@
+messages:
+  prefix: "&0[CLUTCH] &f"
+
+items:
+  tool:
+    material: "COMPASS"
+    name: "&6토지 도구"
+    custom-model-data: 10001
+  claim-ticket:
+    material: "PAPER"
+    name: "&b땅 구매권"
+    custom-model-data: 10002
+
+protection:
+  protect-unregistered-land: true

@@ -9,19 +9,21 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
 import java.util.Optional;
 
 public class LandProtectionListener implements Listener {
+    private final ClutchLandPlugin plugin;
     private final LandManager landManager;
 
-    public LandProtectionListener(LandManager landManager) {
+    public LandProtectionListener(ClutchLandPlugin plugin, LandManager landManager) {
+        this.plugin = plugin;
         this.landManager = landManager;
     }
 
@@ -100,6 +102,9 @@ public class LandProtectionListener implements Listener {
             return true;
         }
         if (landOpt.isEmpty()) {
+            if (!plugin.isProtectUnregisteredLand()) {
+                return true;
+            }
             player.sendMessage(ClutchLandPlugin.PREFIX + "본인의 권한이 없는 땅입니다.");
             return false;
         }

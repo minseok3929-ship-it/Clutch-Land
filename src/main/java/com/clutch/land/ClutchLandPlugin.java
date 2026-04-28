@@ -16,16 +16,18 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class ClutchLandPlugin extends JavaPlugin {
     public static final String ADMIN_PERMISSION = "clutchland.admin";
-    public static final String PREFIX = ChatColor.BLACK + "[CLUTCH] " + ChatColor.WHITE;
+    public static String PREFIX = ChatColor.BLACK + "[CLUTCH] " + ChatColor.WHITE;
 
     private LandDatabase landDatabase;
     private LandManager landManager;
     private SelectionManager selectionManager;
     private LandItemFactory itemFactory;
+    private boolean protectUnregisteredLand;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        loadPluginSettings();
 
         this.landDatabase = new LandDatabase(this);
         this.landDatabase.initialize();
@@ -38,6 +40,16 @@ public class ClutchLandPlugin extends JavaPlugin {
         registerListeners();
 
         getLogger().info("ClutchLand enabled.");
+    }
+
+    private void loadPluginSettings() {
+        PREFIX = ChatColor.translateAlternateColorCodes('&',
+            getConfig().getString("messages.prefix", "&0[CLUTCH] &f"));
+        this.protectUnregisteredLand = getConfig().getBoolean("protection.protect-unregistered-land", true);
+    }
+
+    public boolean isProtectUnregisteredLand() {
+        return protectUnregisteredLand;
     }
 
     @Override
@@ -68,7 +80,7 @@ public class ClutchLandPlugin extends JavaPlugin {
     private void registerListeners() {
         getServer().getPluginManager().registerEvents(new LandSelectionListener(selectionManager, itemFactory), this);
         getServer().getPluginManager().registerEvents(new LandClaimListener(landManager, itemFactory), this);
-        getServer().getPluginManager().registerEvents(new LandProtectionListener(landManager), this);
+        getServer().getPluginManager().registerEvents(new LandProtectionListener(this, landManager), this);
         getServer().getPluginManager().registerEvents(new LandEnterListener(landManager), this);
     }
 }
