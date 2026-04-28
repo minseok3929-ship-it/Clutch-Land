@@ -1,0 +1,12 @@
+name: ClutchLand
+version: 1.0.0
+main: com.clutch.land.ClutchLandPlugin
+api-version: '1.21'
+commands:
+  토지:
+    description: 토지 관리자 명령어
+  땅:
+    description: 플레이어 땅 명령어
+permissions:
+  clutchland.admin:
+    default: op
