@@ -4,6 +4,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -25,9 +26,12 @@ public class LandItemFactory {
 
         FileConfiguration config = plugin.getConfig();
 
-        this.toolMaterial = parseMaterial(config.getString("items.tool.material"), Material.COMPASS);
-        this.toolName = color(config.getString("items.tool.name", "&6토지 도구"));
-        this.toolCustomModelData = config.getInt("items.tool.custom-model-data", 10001);
+        this.toolMaterial = parseMaterial(
+            pick(config, "items.land_tool.material", "items.tool.material"),
+            Material.GOLDEN_AXE
+        );
+        this.toolName = color(pick(config, "items.land_tool.name", "items.tool.name", "&6토지 도구"));
+        this.toolCustomModelData = pickInt(config, "items.land_tool.custom-model-data", "items.tool.custom-model-data", 10001);
 
         this.claimTicketMaterial = parseMaterial(config.getString("items.claim-ticket.material"), Material.PAPER);
         this.claimTicketName = color(config.getString("items.claim-ticket.name", "&b땅 구매권"));
@@ -47,6 +51,13 @@ public class LandItemFactory {
         return item;
     }
 
+    public void giveLandTool(Player player) {
+        if (player == null) {
+            return;
+        }
+        player.getInventory().addItem(createTool());
+    }
+
     public ItemStack createClaimTicket() {
         ItemStack item = new ItemStack(claimTicketMaterial);
         ItemMeta meta = item.getItemMeta();
@@ -62,6 +73,10 @@ public class LandItemFactory {
 
     public boolean isTool(ItemStack item) {
         return isType(item, "tool", toolMaterial, toolCustomModelData);
+    }
+
+    public boolean isLandTool(ItemStack item) {
+        return isTool(item);
     }
 
     public boolean isClaimTicket(ItemStack item) {
@@ -90,5 +105,29 @@ public class LandItemFactory {
 
     private String color(String raw) {
         return ChatColor.translateAlternateColorCodes('&', raw == null ? "" : raw);
+    }
+
+    private String pick(FileConfiguration config, String primaryPath, String legacyPath) {
+        return pick(config, primaryPath, legacyPath, null);
+    }
+
+    private String pick(FileConfiguration config, String primaryPath, String legacyPath, String fallback) {
+        if (config.isString(primaryPath)) {
+            return config.getString(primaryPath);
+        }
+        if (config.isString(legacyPath)) {
+            return config.getString(legacyPath);
+        }
+        return fallback;
+    }
+
+    private int pickInt(FileConfiguration config, String primaryPath, String legacyPath, int fallback) {
+        if (config.isInt(primaryPath)) {
+            return config.getInt(primaryPath);
+        }
+        if (config.isInt(legacyPath)) {
+            return config.getInt(legacyPath);
+        }
+        return fallback;
     }
 }

@@ -41,7 +41,7 @@ public class LandAdminCommand implements CommandExecutor {
 
         switch (args[0]) {
             case "도구" -> {
-                player.getInventory().addItem(itemFactory.createTool());
+                itemFactory.giveLandTool(player);
                 player.sendMessage(ClutchLandPlugin.PREFIX + "토지 도구를 지급했습니다.");
             }
             case "생성" -> handleCreate(player);

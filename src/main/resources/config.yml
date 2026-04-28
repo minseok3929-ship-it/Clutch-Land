@@ -2,8 +2,8 @@ messages:
   prefix: "&0[CLUTCH] &f"
 
 items:
-  tool:
-    material: "COMPASS"
+  land_tool:
+    material: "GOLDEN_AXE"
     name: "&6토지 도구"
     custom-model-data: 10001
   claim-ticket:

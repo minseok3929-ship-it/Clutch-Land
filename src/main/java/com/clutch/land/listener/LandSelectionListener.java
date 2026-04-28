@@ -19,7 +19,7 @@ public class LandSelectionListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onSelect(PlayerInteractEvent event) {
-        if (event.getItem() == null || !itemFactory.isTool(event.getItem())) {
+        if (event.getItem() == null || !itemFactory.isLandTool(event.getItem())) {
             return;
         }
         if (event.getPlayer() == null) {
