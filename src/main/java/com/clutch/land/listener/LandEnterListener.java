@@ -7,16 +7,18 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 
 public class LandEnterListener implements Listener {
+    private static final String TITLE = ChatColor.BLACK + "CLUTCH";
+
     private final LandManager landManager;
-    private final Map<UUID, Integer> lastLandId = new HashMap<>();
+    private final Map<UUID, Land> currentLandMap = new HashMap<>();
 
     public LandEnterListener(LandManager landManager) {
         this.landManager = landManager;
@@ -24,7 +26,10 @@ public class LandEnterListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onMove(PlayerMoveEvent event) {
-        if (event.getTo() == null || event.getFrom().getBlockX() == event.getTo().getBlockX()
+        if (event.getTo() == null) {
+            return;
+        }
+        if (event.getFrom().getBlockX() == event.getTo().getBlockX()
             && event.getFrom().getBlockY() == event.getTo().getBlockY()
             && event.getFrom().getBlockZ() == event.getTo().getBlockZ()
             && Objects.equals(event.getFrom().getWorld(), event.getTo().getWorld())) {
@@ -32,27 +37,66 @@ public class LandEnterListener implements Listener {
         }
 
         Player player = event.getPlayer();
-        Optional<Land> fromLand = landManager.getLandAt(event.getFrom());
-        Optional<Land> toLand = landManager.getLandAt(event.getTo());
+        UUID uuid = player.getUniqueId();
 
-        Integer fromId = fromLand.map(Land::getId).orElse(null);
-        Integer toId = toLand.map(Land::getId).orElse(null);
+        Land previousLand = currentLandMap.get(uuid);
+        Land currentLand = landManager.getLandAt(event.getTo()).orElse(null);
 
-        Integer cached = lastLandId.get(player.getUniqueId());
-        if (Objects.equals(cached, toId) || Objects.equals(fromId, toId)) {
-            lastLandId.put(player.getUniqueId(), toId);
+        if (isSameLand(previousLand, currentLand)) {
             return;
         }
 
-        lastLandId.put(player.getUniqueId(), toId);
-        if (toLand.isEmpty()) {
-            return;
+        if (previousLand != null) {
+            showExitTitle(player, previousLand);
         }
 
-        Land land = toLand.get();
-        String title = land.hasOwner()
-            ? ChatColor.GOLD + land.getOwnerName() + "의 땅"
-            : ChatColor.GRAY + "<빈 땅>";
-        player.sendTitle(title, "", 5, 40, 10);
+        if (currentLand != null) {
+            showEnterTitle(player, currentLand);
+            currentLandMap.put(uuid, currentLand);
+        } else {
+            currentLandMap.remove(uuid);
+        }
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        currentLandMap.remove(event.getPlayer().getUniqueId());
+    }
+
+    private boolean isSameLand(Land a, Land b) {
+        if (a == null && b == null) {
+            return true;
+        }
+        if (a == null || b == null) {
+            return false;
+        }
+        return a.getId() == b.getId();
+    }
+
+    private void showEnterTitle(Player player, Land land) {
+        player.sendTitle(
+            TITLE,
+            ChatColor.GREEN + landDisplayName(land) + "에 들어왔습니다.",
+            5,
+            40,
+            10
+        );
+    }
+
+    private void showExitTitle(Player player, Land land) {
+        player.sendTitle(
+            TITLE,
+            ChatColor.GREEN + landDisplayName(land) + "에서 나갔습니다.",
+            5,
+            40,
+            10
+        );
+    }
+
+    private String landDisplayName(Land land) {
+        if (land == null || !land.hasOwner() || land.getOwnerName() == null || land.getOwnerName().isBlank()) {
+            return "빈 땅";
+        }
+        return land.getOwnerName() + "의 땅";
     }
 }

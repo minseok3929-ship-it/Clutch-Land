@@ -14,10 +14,12 @@ import org.bukkit.inventory.ItemStack;
 import java.util.Optional;
 
 public class LandClaimListener implements Listener {
+    private final ClutchLandPlugin plugin;
     private final LandManager landManager;
     private final LandItemFactory itemFactory;
 
-    public LandClaimListener(LandManager landManager, LandItemFactory itemFactory) {
+    public LandClaimListener(ClutchLandPlugin plugin, LandManager landManager, LandItemFactory itemFactory) {
+        this.plugin = plugin;
         this.landManager = landManager;
         this.itemFactory = itemFactory;
     }
@@ -39,14 +41,31 @@ public class LandClaimListener implements Listener {
         event.setCancelled(true);
 
         Optional<Land> landOpt = landManager.getLandAt(event.getPlayer().getLocation());
+
+        if (plugin.isClaimDebug()) {
+            Land land = landOpt.orElse(null);
+            plugin.getLogger().info("[ClaimDebug] player=" + event.getPlayer().getName()
+                + " world=" + event.getPlayer().getWorld().getName()
+                + " x=" + event.getPlayer().getLocation().getBlockX()
+                + " y=" + event.getPlayer().getLocation().getBlockY()
+                + " z=" + event.getPlayer().getLocation().getBlockZ()
+                + " land=" + (land == null ? "null" : land.getId())
+                + " owner=" + (land == null ? "null" : land.getOwnerName()));
+        }
+
         if (landOpt.isEmpty()) {
             event.getPlayer().sendMessage(ClutchLandPlugin.PREFIX + "이 곳은 구매할 수 없는 땅 입니다.");
             return;
         }
 
         Land land = landOpt.get();
-        if (land.hasOwner() || landManager.getOwnedLand(event.getPlayer().getUniqueId()).isPresent()) {
+        if (land.hasOwner()) {
             event.getPlayer().sendMessage(ClutchLandPlugin.PREFIX + "이 곳은 구매할 수 없는 땅 입니다.");
+            return;
+        }
+
+        if (landManager.getOwnedLand(event.getPlayer().getUniqueId()).isPresent()) {
+            event.getPlayer().sendMessage(ClutchLandPlugin.PREFIX + "이미 소유한 땅이 있습니다.");
             return;
         }
 

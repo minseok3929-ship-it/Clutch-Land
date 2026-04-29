@@ -13,3 +13,6 @@ items:
 
 protection:
   protect-unregistered-land: true
+
+debug:
+  claim: false

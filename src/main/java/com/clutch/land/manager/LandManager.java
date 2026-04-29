@@ -3,11 +3,14 @@ package com.clutch.land.manager;
 import com.clutch.land.ClutchLandPlugin;
 import com.clutch.land.db.LandDatabase;
 import com.clutch.land.model.Land;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 
-import java.util.*;
+import java.util.Optional;
+import java.util.UUID;
 
 public class LandManager {
     private final ClutchLandPlugin plugin;
@@ -30,22 +33,32 @@ public class LandManager {
     }
 
     public boolean createLand(String world, int x1, int y1, int z1, int x2, int y2, int z2) {
-        Land candidate = new Land(-1, world, x1, y1, z1, x2, y2, z2, null, null);
+        World bukkitWorld = Bukkit.getWorld(world);
+        if (bukkitWorld == null) {
+            return false;
+        }
+
+        int minY = bukkitWorld.getMinHeight();
+        int maxY = bukkitWorld.getMaxHeight() - 1;
+
+        Land candidate = new Land(-1, world, x1, minY, z1, x2, maxY, z2, null, null);
         for (Land land : db.getAllLands()) {
             if (candidate.overlaps(land)) {
                 return false;
             }
         }
-        int id = db.createLand(world, x1, y1, z1, x2, y2, z2);
+        int id = db.createLand(world, x1, minY, z1, x2, maxY, z2);
         return id > 0;
     }
 
     public int deleteLandRegion(String world, int x1, int y1, int z1, int x2, int y2, int z2) {
+        World bukkitWorld = Bukkit.getWorld(world);
+        int minY = bukkitWorld == null ? Math.min(y1, y2) : bukkitWorld.getMinHeight();
+        int maxY = bukkitWorld == null ? Math.max(y1, y2) : bukkitWorld.getMaxHeight() - 1;
+
         int minX = Math.min(x1, x2);
-        int minY = Math.min(y1, y2);
         int minZ = Math.min(z1, z2);
         int maxX = Math.max(x1, x2);
-        int maxY = Math.max(y1, y2);
         int maxZ = Math.max(z1, z2);
         return db.deleteLandsOverlapping(world, minX, minY, minZ, maxX, maxY, maxZ);
     }
