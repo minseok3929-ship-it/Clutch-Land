@@ -11,8 +11,8 @@ items:
     name: "&b땅 구매권"
     custom-model-data: 10002
 
-protection:
-  protect-unregistered-land: true
+settings:
+  protect_unregistered_land: false
 
 debug:
   claim: false

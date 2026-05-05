@@ -46,7 +46,10 @@ public class ClutchLandPlugin extends JavaPlugin {
     private void loadPluginSettings() {
         PREFIX = ChatColor.translateAlternateColorCodes('&',
             getConfig().getString("messages.prefix", "&0[CLUTCH] &f"));
-        this.protectUnregisteredLand = getConfig().getBoolean("protection.protect-unregistered-land", true);
+        this.protectUnregisteredLand = getConfig().getBoolean(
+            "settings.protect_unregistered_land",
+            getConfig().getBoolean("protection.protect-unregistered-land", false)
+        );
         this.claimDebug = getConfig().getBoolean("debug.claim", false);
     }
 
