@@ -32,6 +32,10 @@ public class LandManager {
         return db.getOwnedLand(uuid);
     }
 
+    public int getOwnedLandCount(UUID uuid) {
+        return db.countOwnedLands(uuid);
+    }
+
     public boolean createLand(String world, int x1, int y1, int z1, int x2, int y2, int z2) {
         World bukkitWorld = Bukkit.getWorld(world);
         if (bukkitWorld == null) {

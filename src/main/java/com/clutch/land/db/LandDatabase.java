@@ -92,6 +92,24 @@ public class LandDatabase {
         return Optional.empty();
     }
 
+    public int countOwnedLands(UUID ownerUuid) {
+        if (ownerUuid == null) {
+            return 0;
+        }
+        String sql = "SELECT COUNT(*) FROM lands WHERE owner_uuid = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, ownerUuid.toString());
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Failed to count owned lands: " + e.getMessage());
+        }
+        return 0;
+    }
+
     public int createLand(String world, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
         String sql = "INSERT INTO lands(world,min_x,min_y,min_z,max_x,max_y,max_z,owner_uuid,owner_name,created_at) VALUES (?,?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {

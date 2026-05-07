@@ -22,13 +22,18 @@ public class LandPlayerCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage(ClutchLandPlugin.PREFIX + "플레이어만 사용 가능합니다.");
+        if (args.length < 1) {
+            sender.sendMessage(ClutchLandPlugin.PREFIX + "사용법: /땅 <공유|공유해제|양도|삭제|개수>");
             return true;
         }
 
-        if (args.length < 1) {
-            player.sendMessage(ClutchLandPlugin.PREFIX + "사용법: /땅 <공유|공유해제|양도|삭제>");
+        if ("개수".equalsIgnoreCase(args[0])) {
+            handleCount(sender, args);
+            return true;
+        }
+
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(ClutchLandPlugin.PREFIX + "플레이어만 사용 가능합니다.");
             return true;
         }
 
@@ -37,7 +42,7 @@ public class LandPlayerCommand implements CommandExecutor {
             case "공유해제" -> unshare(player, args);
             case "양도" -> transfer(player, args);
             case "삭제" -> removeOwnership(player);
-            default -> player.sendMessage(ClutchLandPlugin.PREFIX + "사용법: /땅 <공유|공유해제|양도|삭제>");
+            default -> player.sendMessage(ClutchLandPlugin.PREFIX + "사용법: /땅 <공유|공유해제|양도|삭제|개수>");
         }
         return true;
     }
@@ -48,6 +53,34 @@ public class LandPlayerCommand implements CommandExecutor {
             player.sendMessage(ClutchLandPlugin.PREFIX + "본인이 소유한 땅이 없습니다.");
         }
         return land;
+    }
+
+    private void handleCount(CommandSender sender, String[] args) {
+        if (args.length == 1) {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage(ClutchLandPlugin.PREFIX + "사용법: /땅 개수 <닉네임>");
+                return;
+            }
+
+            int count = landManager.getOwnedLandCount(player.getUniqueId());
+            player.sendMessage(ClutchLandPlugin.PREFIX + "현재 보유한 토지는 " + count + "개 입니다.");
+            return;
+        }
+
+        if (!sender.isOp() && !sender.hasPermission(ClutchLandPlugin.ADMIN_PERMISSION)) {
+            sender.sendMessage(ClutchLandPlugin.PREFIX + "권한이 없습니다.");
+            return;
+        }
+
+        OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
+        if (!target.isOnline() && !target.hasPlayedBefore()) {
+            sender.sendMessage(ClutchLandPlugin.PREFIX + "해당 플레이어를 찾을 수 없습니다.");
+            return;
+        }
+
+        int count = landManager.getOwnedLandCount(target.getUniqueId());
+        String targetName = target.getName() == null ? args[1] : target.getName();
+        sender.sendMessage(ClutchLandPlugin.PREFIX + targetName + "님의 토지는 " + count + "개 입니다.");
     }
 
     private void share(Player owner, String[] args) {
