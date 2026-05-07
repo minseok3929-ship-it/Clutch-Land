@@ -13,7 +13,7 @@ items:
 
 settings:
   protect_unregistered_land: false
+  debug: false
 
 debug:
   claim: false
-  protection: true

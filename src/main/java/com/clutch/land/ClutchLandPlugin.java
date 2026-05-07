@@ -47,7 +47,7 @@ public class ClutchLandPlugin extends JavaPlugin {
         PREFIX = ChatColor.translateAlternateColorCodes('&',
             getConfig().getString("messages.prefix", "&0[CLUTCH] &f"));
         this.claimDebug = getConfig().getBoolean("debug.claim", false);
-        this.protectionDebug = getConfig().getBoolean("debug.protection", true);
+        this.protectionDebug = getConfig().getBoolean("settings.debug", false);
     }
 
     public boolean isClaimDebug() {
