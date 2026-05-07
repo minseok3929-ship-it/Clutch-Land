@@ -22,8 +22,8 @@ public class ClutchLandPlugin extends JavaPlugin {
     private LandManager landManager;
     private SelectionManager selectionManager;
     private LandItemFactory itemFactory;
-    private boolean protectUnregisteredLand;
     private boolean claimDebug;
+    private boolean protectionDebug;
 
     @Override
     public void onEnable() {
@@ -46,19 +46,16 @@ public class ClutchLandPlugin extends JavaPlugin {
     private void loadPluginSettings() {
         PREFIX = ChatColor.translateAlternateColorCodes('&',
             getConfig().getString("messages.prefix", "&0[CLUTCH] &f"));
-        this.protectUnregisteredLand = getConfig().getBoolean(
-            "settings.protect_unregistered_land",
-            getConfig().getBoolean("protection.protect-unregistered-land", false)
-        );
         this.claimDebug = getConfig().getBoolean("debug.claim", false);
-    }
-
-    public boolean isProtectUnregisteredLand() {
-        return protectUnregisteredLand;
+        this.protectionDebug = getConfig().getBoolean("debug.protection", true);
     }
 
     public boolean isClaimDebug() {
         return claimDebug;
+    }
+
+    public boolean isProtectionDebug() {
+        return protectionDebug;
     }
 
     @Override

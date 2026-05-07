@@ -3,6 +3,7 @@ package com.clutch.land.listener;
 import com.clutch.land.ClutchLandPlugin;
 import com.clutch.land.manager.LandManager;
 import com.clutch.land.model.Land;
+import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -16,8 +17,6 @@ import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
-import java.util.Optional;
-
 public class LandProtectionListener implements Listener {
     private final ClutchLandPlugin plugin;
     private final LandManager landManager;
@@ -29,16 +28,16 @@ public class LandProtectionListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onBreak(BlockBreakEvent event) {
-        if (!check(event.getPlayer(), landManager.getLandAt(event.getBlock().getLocation()))) {
-            event.setCancelled(true);
-        }
+        ProtectionCheck check = check(event.getPlayer(), event.getBlock().getLocation());
+        logProtectionDebug("BlockBreakEvent", event.getPlayer(), event.getBlock().getLocation(), check);
+        cancelIfDenied(event, event.getPlayer(), check);
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onPlace(BlockPlaceEvent event) {
-        if (!check(event.getPlayer(), landManager.getLandAt(event.getBlock().getLocation()))) {
-            event.setCancelled(true);
-        }
+        ProtectionCheck check = check(event.getPlayer(), event.getBlockPlaced().getLocation());
+        logProtectionDebug("BlockPlaceEvent", event.getPlayer(), event.getBlockPlaced().getLocation(), check);
+        cancelIfDenied(event, event.getPlayer(), check);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -46,22 +45,28 @@ public class LandProtectionListener implements Listener {
         if (event.getClickedBlock() == null) {
             return;
         }
-        if (!check(event.getPlayer(), landManager.getLandAt(event.getClickedBlock().getLocation()))) {
+        ProtectionCheck check = check(event.getPlayer(), event.getClickedBlock().getLocation());
+        if (check.cancel()) {
             event.setCancelled(true);
+            event.getPlayer().sendMessage(ClutchLandPlugin.PREFIX + "본인의 권한이 없는 땅입니다.");
         }
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onBucketEmpty(PlayerBucketEmptyEvent event) {
-        if (!check(event.getPlayer(), landManager.getLandAt(event.getBlock().getLocation()))) {
+        ProtectionCheck check = check(event.getPlayer(), event.getBlock().getLocation());
+        if (check.cancel()) {
             event.setCancelled(true);
+            event.getPlayer().sendMessage(ClutchLandPlugin.PREFIX + "본인의 권한이 없는 땅입니다.");
         }
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onBucketFill(PlayerBucketFillEvent event) {
-        if (!check(event.getPlayer(), landManager.getLandAt(event.getBlock().getLocation()))) {
+        ProtectionCheck check = check(event.getPlayer(), event.getBlock().getLocation());
+        if (check.cancel()) {
             event.setCancelled(true);
+            event.getPlayer().sendMessage(ClutchLandPlugin.PREFIX + "본인의 권한이 없는 땅입니다.");
         }
     }
 
@@ -70,8 +75,10 @@ public class LandProtectionListener implements Listener {
         if (!(event.getDamager() instanceof Player player)) {
             return;
         }
-        if (!check(player, landManager.getLandAt(event.getEntity().getLocation()))) {
+        ProtectionCheck check = check(player, event.getEntity().getLocation());
+        if (check.cancel()) {
             event.setCancelled(true);
+            player.sendMessage(ClutchLandPlugin.PREFIX + "본인의 권한이 없는 땅입니다.");
         }
     }
 
@@ -80,8 +87,10 @@ public class LandProtectionListener implements Listener {
         if (!(event.getRemover() instanceof Player player)) {
             return;
         }
-        if (!check(player, landManager.getLandAt(event.getEntity().getLocation()))) {
+        ProtectionCheck check = check(player, event.getEntity().getLocation());
+        if (check.cancel()) {
             event.setCancelled(true);
+            player.sendMessage(ClutchLandPlugin.PREFIX + "본인의 권한이 없는 땅입니다.");
         }
     }
 
@@ -92,26 +101,50 @@ public class LandProtectionListener implements Listener {
             return;
         }
         Entity entity = event.getEntity();
-        if (!check(player, landManager.getLandAt(entity.getLocation()))) {
+        ProtectionCheck check = check(player, entity.getLocation());
+        if (check.cancel()) {
             event.setCancelled(true);
+            player.sendMessage(ClutchLandPlugin.PREFIX + "본인의 권한이 없는 땅입니다.");
         }
     }
 
-    private boolean check(Player player, Optional<Land> landOpt) {
+    private ProtectionCheck check(Player player, Location location) {
+        Land land = landManager.getLandAt(location).orElse(null);
+
+        if (land == null) {
+            return new ProtectionCheck(null, false);
+        }
+
         if (player.isOp() || player.hasPermission(ClutchLandPlugin.ADMIN_PERMISSION)) {
-            return true;
+            return new ProtectionCheck(land, false);
         }
-        if (landOpt.isEmpty()) {
-            if (!plugin.isProtectUnregisteredLand()) {
-                return true;
-            }
-            player.sendMessage(ClutchLandPlugin.PREFIX + "본인의 권한이 없는 땅입니다.");
-            return false;
+
+        return new ProtectionCheck(land, !landManager.hasPermission(player, land));
+    }
+
+    private void cancelIfDenied(org.bukkit.event.Cancellable event, Player player, ProtectionCheck check) {
+        if (!check.cancel()) {
+            return;
         }
-        if (!landManager.hasPermission(player, landOpt.get())) {
-            player.sendMessage(ClutchLandPlugin.PREFIX + "본인의 권한이 없는 땅입니다.");
-            return false;
+        event.setCancelled(true);
+        player.sendMessage(ClutchLandPlugin.PREFIX + "본인의 권한이 없는 땅입니다.");
+    }
+
+    private void logProtectionDebug(String eventName, Player player, Location location, ProtectionCheck check) {
+        if (!plugin.isProtectionDebug()) {
+            return;
         }
-        return true;
+        plugin.getLogger().info("[ProtectionDebug] event=" + eventName
+            + " player=" + player.getName()
+            + " world=" + location.getWorld().getName()
+            + " x=" + location.getBlockX()
+            + " y=" + location.getBlockY()
+            + " z=" + location.getBlockZ()
+            + " landNull=" + (check.land() == null)
+            + " landId=" + (check.land() == null ? "null" : check.land().getId())
+            + " cancel=" + check.cancel());
+    }
+
+    private record ProtectionCheck(Land land, boolean cancel) {
     }
 }
