@@ -137,7 +137,10 @@ public class LandDatabase {
 
     public int deleteLandsOverlapping(String world, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
         List<Integer> ids = new ArrayList<>();
-        String findSql = "SELECT id FROM lands WHERE world = ? AND min_x <= ? AND max_x >= ? AND min_y <= ? AND max_y >= ? AND min_z <= ? AND max_z >= ?";
+        String findSql = "SELECT id FROM lands WHERE world = ? "
+            + "AND MIN(min_x, max_x) <= ? AND MAX(min_x, max_x) >= ? "
+            + "AND MIN(min_y, max_y) <= ? AND MAX(min_y, max_y) >= ? "
+            + "AND MIN(min_z, max_z) <= ? AND MAX(min_z, max_z) >= ?";
         try (PreparedStatement find = connection.prepareStatement(findSql)) {
             find.setString(1, world);
             find.setInt(2, maxX);
@@ -231,6 +234,22 @@ public class LandDatabase {
             plugin.getLogger().severe("Failed to remove member: " + e.getMessage());
         }
         return false;
+    }
+
+    public Map<Integer, Set<UUID>> getAllMembers() {
+        String sql = "SELECT land_id, member_uuid FROM land_members";
+        Map<Integer, Set<UUID>> members = new HashMap<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet rs = statement.executeQuery()) {
+            while (rs.next()) {
+                int landId = rs.getInt("land_id");
+                UUID memberUuid = UUID.fromString(rs.getString("member_uuid"));
+                members.computeIfAbsent(landId, ignored -> new HashSet<>()).add(memberUuid);
+            }
+        } catch (SQLException | IllegalArgumentException e) {
+            plugin.getLogger().severe("Failed to load all land members: " + e.getMessage());
+        }
+        return members;
     }
 
     public Set<UUID> getMembers(int landId) {
