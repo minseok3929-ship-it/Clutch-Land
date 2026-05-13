@@ -37,6 +37,7 @@ public class LandClaimListener implements Listener {
         if (!itemFactory.isClaimTicket(item)) {
             return;
         }
+        int ticketLevel = itemFactory.getClaimTicketLevel(item);
 
         event.setCancelled(true);
 
@@ -64,8 +65,9 @@ public class LandClaimListener implements Listener {
             return;
         }
 
-        if (landManager.getOwnedLand(event.getPlayer().getUniqueId()).isPresent()) {
-            event.getPlayer().sendMessage(ClutchLandPlugin.PREFIX + "이미 소유한 땅이 있습니다.");
+        int currentOwnedCount = landManager.getOwnedLandCount(event.getPlayer().getUniqueId());
+        if (currentOwnedCount >= ticketLevel) {
+            event.getPlayer().sendMessage(ClutchLandPlugin.PREFIX + "현재 구매권 단계로는 더 이상 땅을 구매할 수 없습니다.");
             return;
         }
 
@@ -75,7 +77,8 @@ public class LandClaimListener implements Listener {
             } else {
                 item.setAmount(item.getAmount() - 1);
             }
-            event.getPlayer().sendMessage(ClutchLandPlugin.PREFIX + "땅을 구매했습니다.");
+            int updatedOwnedCount = currentOwnedCount + 1;
+            event.getPlayer().sendMessage(ClutchLandPlugin.PREFIX + "토지를 구매했습니다. 현재 보유 토지: " + updatedOwnedCount + "/" + ticketLevel);
         } else {
             event.getPlayer().sendMessage(ClutchLandPlugin.PREFIX + "이 곳은 구매할 수 없는 땅 입니다.");
         }

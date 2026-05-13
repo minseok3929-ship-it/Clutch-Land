@@ -118,9 +118,6 @@ public class LandManager {
     }
 
     public boolean claimLand(Player player, Land land) {
-        if (getOwnedLand(player.getUniqueId()).isPresent()) {
-            return false;
-        }
         if (land.hasOwner()) {
             return false;
         }

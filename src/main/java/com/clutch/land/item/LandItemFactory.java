@@ -12,6 +12,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class LandItemFactory {
     private final NamespacedKey itemKey;
+    private final NamespacedKey ticketLevelKey;
 
     private final Material toolMaterial;
     private final String toolName;
@@ -23,6 +24,7 @@ public class LandItemFactory {
 
     public LandItemFactory(JavaPlugin plugin) {
         this.itemKey = new NamespacedKey(plugin, "clutchland_item_type");
+        this.ticketLevelKey = new NamespacedKey(plugin, "clutch_land_ticket_level");
 
         FileConfiguration config = plugin.getConfig();
 
@@ -59,14 +61,20 @@ public class LandItemFactory {
     }
 
     public ItemStack createClaimTicket() {
+        return createClaimTicket(1);
+    }
+
+    public ItemStack createClaimTicket(int level) {
+        int normalizedLevel = Math.max(1, level);
         ItemStack item = new ItemStack(claimTicketMaterial);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) {
             return item;
         }
-        meta.setDisplayName(claimTicketName);
+        meta.setDisplayName(claimTicketName + " " + normalizedLevel + "단계");
         meta.setCustomModelData(claimTicketCustomModelData);
         meta.getPersistentDataContainer().set(itemKey, PersistentDataType.STRING, "ticket");
+        meta.getPersistentDataContainer().set(ticketLevelKey, PersistentDataType.INTEGER, normalizedLevel);
         item.setItemMeta(meta);
         return item;
     }
@@ -81,6 +89,18 @@ public class LandItemFactory {
 
     public boolean isClaimTicket(ItemStack item) {
         return isType(item, "ticket", claimTicketMaterial, claimTicketCustomModelData);
+    }
+
+    public int getClaimTicketLevel(ItemStack item) {
+        if (!isClaimTicket(item)) {
+            return 0;
+        }
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) {
+            return 0;
+        }
+        Integer level = meta.getPersistentDataContainer().get(ticketLevelKey, PersistentDataType.INTEGER);
+        return level == null ? 1 : Math.max(1, level);
     }
 
     private boolean isType(ItemStack item, String type, Material expectedMaterial, int expectedModelData) {

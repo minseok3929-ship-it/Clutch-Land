@@ -47,13 +47,46 @@ public class LandAdminCommand implements CommandExecutor {
             case "생성" -> handleCreate(player);
             case "삭제" -> handleDelete(player);
             case "해임" -> handleDismiss(player, args);
-            case "구매권" -> {
-                player.getInventory().addItem(itemFactory.createClaimTicket());
-                player.sendMessage(ClutchLandPlugin.PREFIX + "땅 구매권을 지급했습니다.");
-            }
+            case "구매권" -> handleClaimTicket(player, args);
             default -> player.sendMessage(ClutchLandPlugin.PREFIX + "사용법: /토지 <도구|생성|삭제|해임|구매권>");
         }
         return true;
+    }
+
+    private void handleClaimTicket(Player player, String[] args) {
+        if (args.length == 1) {
+            player.getInventory().addItem(itemFactory.createClaimTicket(1));
+            player.sendMessage(ClutchLandPlugin.PREFIX + "땅 구매권 1단계를 지급했습니다.");
+            return;
+        }
+
+        if (args.length < 3) {
+            player.sendMessage(ClutchLandPlugin.PREFIX + "사용법: /토지 구매권 <닉네임> <단계>");
+            return;
+        }
+
+        Player target = Bukkit.getPlayerExact(args[1]);
+        if (target == null) {
+            player.sendMessage(ClutchLandPlugin.PREFIX + "해당 플레이어를 찾을 수 없습니다.");
+            return;
+        }
+
+        int level;
+        try {
+            level = Integer.parseInt(args[2]);
+        } catch (NumberFormatException e) {
+            player.sendMessage(ClutchLandPlugin.PREFIX + "단계는 숫자로 입력해야 합니다.");
+            return;
+        }
+
+        if (level < 1) {
+            player.sendMessage(ClutchLandPlugin.PREFIX + "단계는 1 이상이어야 합니다.");
+            return;
+        }
+
+        target.getInventory().addItem(itemFactory.createClaimTicket(level));
+        player.sendMessage(ClutchLandPlugin.PREFIX + target.getName() + "님에게 땅 구매권 " + level + "단계를 지급했습니다.");
+        target.sendMessage(ClutchLandPlugin.PREFIX + "땅 구매권 " + level + "단계를 지급받았습니다.");
     }
 
     private void handleCreate(Player player) {
