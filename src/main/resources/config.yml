@@ -1,0 +1,19 @@
+messages:
+  prefix: "&0[CLUTCH] &f"
+
+items:
+  land_tool:
+    material: "GOLDEN_AXE"
+    name: "&6토지 도구"
+    custom-model-data: 10001
+  claim-ticket:
+    material: "PAPER"
+    name: "&b땅 구매권"
+    custom-model-data: 10002
+
+settings:
+  protect_unregistered_land: false
+  debug: false
+
+debug:
+  claim: false
